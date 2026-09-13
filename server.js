@@ -1,6 +1,22 @@
 ﻿const express = require("express");
+const Sentry = require("@sentry/node");
+
 const app = express();
 app.use(express.json());
+
+// Initialize Official Sentry SDK
+// You can supply your actual Sentry DSN via environment variable: SENTRY_DSN
+const SENTRY_DSN = process.env.SENTRY_DSN || "";
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 1.0,
+    environment: "production"
+  });
+  console.log("[+] Official Sentry SDK initialized with DSN:", SENTRY_DSN.substring(0, 15) + "...");
+} else {
+  console.log("[*] Running in Local Sentry Mode (Set SENTRY_DSN to stream directly to Sentry cloud dashboard)");
+}
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
@@ -12,9 +28,14 @@ app.post("/api/webhook/stripe", async (req, res) => {
     const country = payload.customer.billing_address.country;
     res.json({ status: "success", country });
   } catch (err) {
-    console.error(`🚨 [CRASH TRIGGERED IN PAYMENT-MICROSERVICE]: ${err.stack}`);
-    
-    // Automatically forwards crash to Incident Commander Webhook Gateway!
+    console.error(`🚨 [CRASH CAPTURED BY SENTRY]: ${err.stack}`);
+
+    // 1. Send exception to live Sentry Cloud (if DSN provided)
+    if (SENTRY_DSN) {
+      Sentry.captureException(err);
+    }
+
+    // 2. Dispatch Sentry alert payload to Incident Commander Webhook Gateway
     try {
       await fetch("http://localhost:8000/api/webhook/sentry", {
         method: "POST",
@@ -23,12 +44,12 @@ app.post("/api/webhook/stripe", async (req, res) => {
           project: "payment-microservice-demo",
           error_type: "TypeError",
           message: `${err.name}: ${err.message}`,
-          culprit: "server.js:12 in handle_stripe_webhook",
+          culprit: "server.js:26 in handle_stripe_webhook",
           timestamp: new Date().toISOString(),
           stack_trace: [
             {
               file: "server.js",
-              line: 12,
+              line: 26,
               function: "handle_stripe_webhook",
               code: "const country = payload.customer.billing_address.country;"
             }

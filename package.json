@@ -1,9 +1,10 @@
-﻿{
+{
   "name": "payment-microservice-demo",
   "version": "1.0.0",
   "description": "Stripe payment processing microservice",
   "main": "server.js",
   "dependencies": {
+    "@sentry/node": "^10.74.0",
     "express": "^4.19.2"
   }
 }
