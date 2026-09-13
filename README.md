@@ -1,2 +1,6 @@
-# payment-microservice-demo
-Real microservice repository used to demonstrate Incident Commander AI Agent live response
+﻿# Payment Microservice Demo
+Production Stripe Webhook Microservice.
+
+## Endpoints
+- GET /health
+- POST /api/webhook/stripe
