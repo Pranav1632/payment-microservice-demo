@@ -42,6 +42,7 @@ app.post("/api/webhook/stripe", async (req, res) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          repo: "Pranav1632/payment-microservice-demo",
           project: "payment-microservice-demo",
           error_type: "TypeError",
           message: `${err.name}: ${err.message}`,
